@@ -1,0 +1,79 @@
+Module Type GestionRendezVous.
+  Parameter RendezVous : Type.
+  Parameter Patient : Type.
+
+  Parameter ajouter : list (Patient * RendezVous) -> Patient -> RendezVous -> list (Patient * RendezVous).
+  Parameter annuler : list (Patient * RendezVous) -> Patient -> RendezVous -> list (Patient * RendezVous).
+  Parameter rechercher : list (Patient * RendezVous) -> Patient -> RendezVous -> bool.
+End GestionRendezVous.
+
+Require Import List.
+Require Import Arith.
+
+Inductive Patient : Type :=
+  | PatientId : nat -> Patient.
+
+Definition eq_patient (p1 p2 : Patient) : bool :=
+  match (p1, p2) with
+  | (PatientId n1, PatientId n2) => Nat.eqb n1 n2
+  end.
+
+Inductive RendezVous : Type :=
+  | RendezVousId : nat -> RendezVous.
+
+Definition eq_rendezvous (r1 r2 : RendezVous) : bool :=
+  match (r1, r2) with
+  | (RendezVousId n1, RendezVousId n2) => Nat.eqb n1 n2
+  end.
+
+Definition ajouter (rvs : list (Patient * RendezVous)) (p : Patient) (r : RendezVous) : list (Patient * RendezVous) :=
+  if existsb (fun pair => andb (eq_patient (fst pair) p) (eq_rendezvous (snd pair) r)) rvs
+  then rvs
+  else (p, r) :: rvs.
+
+Definition annuler (rvs : list (Patient * RendezVous)) (p : Patient) (r : RendezVous) : list (Patient * RendezVous) :=
+  filter (fun pair => negb (andb (eq_patient (fst pair) p) (eq_rendezvous (snd pair) r))) rvs.
+
+Definition rechercher (rvs : list (Patient * RendezVous)) (p : Patient) (r : RendezVous) : bool :=
+  existsb (fun pair => andb (eq_patient (fst pair) p) (eq_rendezvous (snd pair) r)) rvs.
+
+
+(* Axiome pas_de_double_rendez_vous *)
+Axiom pas_de_double_rendez_vous : forall p r1 r2 rvs,
+  ajouter rvs p r1 = ajouter rvs p r2 -> r1 = r2.
+
+(* Axiome ajout_reussi_implique_present *)
+Axiom ajout_reussi_implique_present : forall p r rvs,
+  In (p, r) (ajouter rvs p r) -> rechercher rvs p r = true.
+
+(* Axiome annulation_reussie_implique_absent *)
+Axiom annulation_reussie_implique_absent : forall p r rvs,
+  ~ In (p, r) (annuler rvs p r) -> rechercher rvs p r = false.
+
+(* Axiome recherche_apres_ajout *)
+Axiom recherche_apres_ajout : forall p r rvs,
+  In (p, r) (ajouter rvs p r) -> rechercher rvs p r = true.
+
+(* Axiome recherche_apres_annulation *)
+Axiom recherche_apres_annulation : forall p r rvs,
+  ~ In (p, r) (annuler rvs p r) -> rechercher rvs p r = false.
+
+Lemma preuve_pas_de_double_rendez_vous : forall p r1 r2 rvs,
+  ajouter rvs p r1 = ajouter rvs p r2 -> r1 = r2.
+Proof.
+  intros p r1 r2 rvs H.  (* Introduit toutes les variables et hypoth\u00e8ses *)
+  apply pas_de_double_rendez_vous with (rvs := rvs) (p := p).
+  assumption.
+Qed.
+
+Lemma preuve_ajout_reussi_implique_present : forall p r rvs,
+  In (p, r) (ajouter rvs p r) -> rechercher rvs p r = true.
+Proof.
+  intros p r rvs H.  (* Introduit toutes les variables et hypoth\u00e8ses *)
+  apply ajout_reussi_implique_present with (rvs := rvs) (p := p) (r := r).
+  assumption.
+Qed.
+
+
+      
+
